@@ -26,7 +26,9 @@ jobs:
       -
         name: Run Buildx
         run: |
+          docker login docker.pkg.github.com -u supcik -p ${{ secrets.GITHUB_TOKEN }}
           docker buildx build \
             --platform linux/amd64,linux/arm/v7,linux/arm64 \
-            --output "type=image,push=false" \
+            --tag docker.pkg.github.com/telecom-tower/quote-of-the-day/quote-of-the-day:latest
+            --output "type=image,push=true" \
             .
