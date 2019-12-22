@@ -23,10 +23,16 @@ jobs:
       -
         name: Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
+      - 
+        name: Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: docker.pkg.github.com
+          username: $GITHUB_ACTOR
+          password: ${{ secrets.GITHUB_TOKEN }}
       -
         name: Run Buildx
         run: |
-          docker login docker.pkg.github.com -u supcik -p ${{ secrets.GITHUB_TOKEN }}
           docker buildx build \
             --platform linux/amd64,linux/arm/v7,linux/arm64 \
             --tag docker.pkg.github.com/telecom-tower/quote-of-the-day/quote-of-the-day:latest \
