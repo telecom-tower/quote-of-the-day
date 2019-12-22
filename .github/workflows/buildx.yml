@@ -14,6 +14,13 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v1
+      - 
+        name: Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: docker.pkg.github.com
+          username: supcik
+          password: ${{ secrets.GITHUB_TOKEN }}
       -
         name: Set up Docker Buildx
         id: buildx
@@ -23,13 +30,6 @@ jobs:
       -
         name: Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
-      - 
-        name: Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: docker.pkg.github.com
-          username: supcik
-          password: ${{ secrets.GITHUB_TOKEN }}
       -
         name: Run Buildx
         run: |
