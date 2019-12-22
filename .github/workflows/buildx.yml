@@ -28,7 +28,7 @@ jobs:
         uses: azure/docker-login@v1
         with:
           login-server: docker.pkg.github.com
-          username: ${{ github.repostitory }}
+          username: supcik
           password: ${{ secrets.GITHUB_TOKEN }}
       -
         name: Run Buildx
