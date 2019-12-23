@@ -15,13 +15,6 @@ jobs:
         name: Checkout
         uses: actions/checkout@v1
       - 
-        name: Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: docker.pkg.github.com
-          username: supcik
-          password: ${{ secrets.GITHUB_TOKEN }}
-      -
         name: Set up Docker Buildx
         id: buildx
         uses: crazy-max/ghaction-docker-buildx@v1
@@ -36,5 +29,6 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/arm/v7,linux/arm64 \
             --tag docker.pkg.github.com/telecom-tower/quote-of-the-day/quote-of-the-day:latest \
-            --output "type=image,push=true" \
+            --output "type=image,push=false" \
             .
+          docker images
