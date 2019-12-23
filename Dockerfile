@@ -1,4 +1,4 @@
-FROM golang:latest AS builder
+FROM golang:alpine AS builder
 WORKDIR /go/src/github.com/telecom-tower/quote-of-the-day
 COPY main.go go.mod go.sum ./
 RUN go get .
