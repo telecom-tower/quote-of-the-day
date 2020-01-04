@@ -4,14 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/namsral/flag"
 	"github.com/pkg/errors"
+	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/telecom-tower/sdk"
 	"golang.org/x/image/colornames"
 	"google.golang.org/grpc"
-	"net/http"
-	"net/url"
 )
 
 const (
@@ -51,20 +56,9 @@ func check(err error, msg string) {
 	}
 }
 
-func main() {
-	debug := flag.Bool("debug", false, "Run in debug mode")
-	category := flag.String("category", "students", "quote category")
-	grpcUrl := flag.String("url", "localhost:10000", "grpc URL")
-	flag.Parse()
-
-	if *debug {
-		log.SetLevel(log.DebugLevel)
-	} else {
-		log.SetLevel(log.WarnLevel)
-	}
-
-	log.Infof("Connecting to tower server : %v", *grpcUrl)
-	conn, err := grpc.Dial(*grpcUrl, grpc.WithInsecure())
+func updateMessage(grpcUrl, category string) {
+	log.Infof("Connecting to tower server : %v", grpcUrl)
+	conn, err := grpc.Dial(grpcUrl, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Error dialing server: %v", err)
 	}
@@ -72,9 +66,9 @@ func main() {
 	client := sdk.NewClient(conn)
 
 	u, _ := url.Parse(quotesServer)
-	if *category != "" {
+	if category != "" {
 		q := u.Query()
-		q.Set("category", *category)
+		q.Set("category", category)
 		u.RawQuery = q.Encode()
 	}
 
@@ -104,4 +98,38 @@ func main() {
 	check(client.Render(), "Error rendering")
 
 	log.Debug("Done")
+}
+
+func main() {
+	debug := flag.Bool("debug", false, "Run in debug mode")
+	category := flag.String("category", "students", "quote category")
+	grpcUrl := flag.String("url", "localhost:10000", "grpc URL")
+	flag.Parse()
+
+	if *debug {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.WarnLevel)
+	}
+
+	updateMessage(*grpcUrl, *category)
+
+	c := cron.New()
+	c.AddFunc("15 * * * *", func() { updateMessage(*grpcUrl, *category) })
+	c.Start()
+
+	sigs := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
+
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		done <- true
+	}()
+
+	<-done
+	c.Stop()
+
+	log.Infof("Finished")
 }

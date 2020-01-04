@@ -14,6 +14,17 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v1
+      -
+        name: Prepare
+        id: prepare
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          MINOR=${TAG%.*}
+          MAJOR=${MINOR%.*}
+          echo ::set-output name=tag_name::${TAG}
+          echo ::set-output name=minor_tag::${MINOR}
+          echo ::set-output name=major_tag::${MAJOR}
+          echo ::set-output name=major_exists::$(git show-ref origin/releases/${MAJOR})
       - 
         name: Set up Docker Buildx
         id: buildx
@@ -29,6 +40,7 @@ jobs:
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_TOKEN }}
           docker buildx build \
             --platform linux/amd64,linux/arm/v7,linux/arm64 \
+            --tag supcik/telecom-tower-client-qod:${{ steps.prepare.outputs.tag_name }}
             --tag supcik/telecom-tower-client-qod:latest \
             --output "type=image,push=true" \
             .
