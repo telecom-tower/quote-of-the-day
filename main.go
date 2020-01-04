@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/namsral/flag"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
@@ -117,6 +118,12 @@ func main() {
 	c := cron.New()
 	c.AddFunc("15 * * * *", func() { updateMessage(*grpcUrl, *category) })
 	c.Start()
+
+	opts := MQTT.NewClientOptions()
+	opts.AddBroker("broker.hivemq.com")
+	opts.SetCleanSession(true)
+
+	mqtt := MQTT.NewClient(opts)
 
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
