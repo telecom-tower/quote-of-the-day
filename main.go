@@ -57,15 +57,7 @@ func check(err error, msg string) {
 	}
 }
 
-func updateMessage(grpcUrl, category string) {
-	log.Infof("Connecting to tower server : %v", grpcUrl)
-	conn, err := grpc.Dial(grpcUrl, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("Error dialing server: %v", err)
-	}
-	defer conn.Close() // nolint: errcheck
-	client := sdk.NewClient(conn)
-
+func getQod(category string) (*qod, error) {
 	u, _ := url.Parse(quotesServer)
 	if category != "" {
 		q := u.Query()
@@ -75,16 +67,33 @@ func updateMessage(grpcUrl, category string) {
 
 	log.Infof("Connecting to quote-of-the-day server: %v", u)
 	res, err := http.Get(u.String())
-	check(err, "Error connecting to server")
+	if err != nil {
+		return nil, errors.WithMessage(err, "Error connecting to server")
+	}
 	defer res.Body.Close()
 
 	q := qod{}
 	err = json.NewDecoder(res.Body).Decode(&q)
-	check(err, "Unable to decode quote")
+	if err != nil {
+		return nil, errors.WithMessage(err, "Unable to decode quote")
+	}
 
 	if q.Success.Total < 1 {
-		log.Fatal("Invalid quote")
+		return nil, errors.WithMessage(err, "Invalid quote")
 	}
+
+	return &q, nil
+
+}
+
+func updateDisplay(grpcUrl string, q *qod) {
+	log.Infof("Connecting to tower server : %v", grpcUrl)
+	conn, err := grpc.Dial(grpcUrl, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("Error dialing server: %v", err)
+	}
+	defer conn.Close() // nolint: errcheck
+	client := sdk.NewClient(conn)
 
 	check(client.StartDrawing(context.Background()), "Error getting frame")
 	check(client.Init(), "Error initializing display")
@@ -113,10 +122,23 @@ func main() {
 		log.SetLevel(log.WarnLevel)
 	}
 
-	updateMessage(*grpcUrl, *category)
+	var q *qod
+	var err error
+
+	q, err = getQod(*category)
+	check(err, "Error getting Quote")
+	updateDisplay(*grpcUrl, q)
 
 	c := cron.New()
-	c.AddFunc("15 * * * *", func() { updateMessage(*grpcUrl, *category) })
+	c.AddFunc("5 * * * *", func() {
+		updateDisplay(*grpcUrl, q)
+	})
+	c.AddFunc("15 * * * *", func() {
+		q, err = getQod(*category)
+		if err != nil {
+			log.Warn("Error updating quote : %v", err)
+		}
+	})
 	c.Start()
 
 	opts := MQTT.NewClientOptions()
