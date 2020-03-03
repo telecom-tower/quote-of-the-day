@@ -2,9 +2,9 @@ name: buildx
 
 on:
   pull_request:
-    branches: master
+    branches: ctf
   push:
-    branches: master
+    branches: ctf
     tags:
 
 jobs:
