@@ -40,7 +40,7 @@ jobs:
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_TOKEN }}
           docker buildx build \
             --platform linux/amd64,linux/arm/v7,linux/arm64 \
-            --tag supcik/telecom-tower-client-qod:latest \
+            --tag supcik/telecom-tower-client-qod:ctf \
             --output "type=image,push=true" \
             .
           docker images
